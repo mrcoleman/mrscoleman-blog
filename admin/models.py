@@ -31,12 +31,14 @@ class Post(Base):
 	title = Column(String)
 	url = Column(String)
 	body = Column(Text)
+	summary = Column(Text)
 	date_posted = Column(DateTime, default = datetime.datetime.now)
 
 	def __init__(self):
 		self.title=""
 		self.url=""
 		self.body=""
+		self.summary=""
 
 users_table = User.__table__
 post_table = Post.__table__

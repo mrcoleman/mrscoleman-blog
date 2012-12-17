@@ -1,9 +1,21 @@
 {% extends "base.html" %}
 {% block body %}
+<script type="text/javascript" src="/static/assets/js/ckeditor/ckeditor.js"></script>
 <form class="form" method="POST" action="/edit?post_id={{ post.id }}">
+	<label for="title">Title</label>
 	<input name="title" type="text" class="input-block-level" placeholder="Title" value="{{ post.title }}">
+	<label for="url">Url</label>
 	<input name="url" type="text" class="input-block-level" placeholder="Url" value="{{ post.url }}">
+	<label for="summary">Summary</label>
+	<textarea name="summary">{{ post.summary }}</textarea>
+	<label for="body_text">Body</label>
 	<textarea name="body_text">{{ post.body }}</textarea>
 	<button type="submit" class="btn btn-large">Save</button>
 </form>
+<script>
+    window.onload = function() {
+        CKEDITOR.replace( 'summary' );
+        CKEDITOR.replace('body_text');
+    };
+</script>
 {% endblock %}

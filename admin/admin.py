@@ -1,9 +1,11 @@
 import web
 import os
 import hashlib
+import subprocess
 from web.contrib.template import render_jinja
 from sqlalchemy.orm import scoped_session, sessionmaker
 from models import *
+from shutil import copyfile
 
 render = render_jinja(
         'templates/admin',   # Set template directory.
@@ -15,6 +17,7 @@ OUTPUT_DIR = os.path.dirname(os.path.realpath("../static")) #by default we're go
 urls = ("/","index",
     "/home","home",
     "/login","login",
+    "/build","build",
     "/edit","edit")
 
 
@@ -98,12 +101,14 @@ class home:
     	print "home"
         if is_loggedin():
         	posts = web.ctx.orm.query(Post).order_by(Post.date_posted.desc())
-        	return render.home(posts = posts)
+        	return render.home(posts = posts,building=os.path.isfile("build.db3"))
         else:
         	print "fail"
         	return web.seeother("/")
 class edit:
 	def GET(self):
+		if is_loggedin() != True:
+			return web.seeother("/")
 		post_id = web.input().post_id
 		if post_id == None:
 			post_id = 0
@@ -113,6 +118,8 @@ class edit:
 			post.id = 0		
 		return render.edit(post = post)
 	def POST(self):
+		if is_loggedin() != True:
+			return web.seeother("/")
 		post_id = web.input().post_id
 		if post_id == None:
 			post_id = 0
@@ -122,15 +129,25 @@ class edit:
 			p.title =""
 			p.url = ""
 			p.body = ""
+			p.summary = ""
 		form = web.input()
 		print form.title
 		p.title = form.title
 		p.url = form.url
 		p.body = form.body_text
+		p.summary = form.summary
 		print p.id
 		if p.id == None:
 			web.ctx.orm.add(p)
 		web.ctx.orm.commit()
 		web.redirect("/home")
+class build:
+	def GET(self):
+		if is_loggedin() != True:
+			return web.seeother("/")
+		copyfile("data.db3","build.db3")
+		subprocess.call(["python","build_site.py"])
+		return web.seeother("/home")
+
 if __name__ == "__main__":
 	app.run()

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block body %}.
+<div class="hero-unit">
+  <h1>Mrs. Coleman's Blog</h1>
+</div>
+<div class="container">
+  {% for post in posts %}
+    <div class="well">
+      <h3><a href="/{{ post.date_posted.strftime('%Y-%m-%d') }}/{{post.url}}">{{ post.title}}</a></h3>
+      {{post.summary}}
+    </div>
+  {% endfor %}
+{% endblock %}
