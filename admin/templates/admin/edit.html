@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block body %}
+<form class="form" method="POST" action="/edit?post_id={{ post.id }}">
+	<input name="title" type="text" class="input-block-level" placeholder="Title" value="{{ post.title }}">
+	<input name="url" type="text" class="input-block-level" placeholder="Url" value="{{ post.url }}">
+	<textarea name="body_text">{{ post.body }}</textarea>
+	<button type="submit" class="btn btn-large">Save</button>
+</form>
+{% endblock %}
