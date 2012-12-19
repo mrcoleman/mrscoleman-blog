@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block body %}
+	<div class="hero-unit">
+		<h2>{{ post.title }}</h2>
+	</div>
+	<div class="container">
+		{{ post.summary}}
+		{{ post.body }}
+	</div>
+{% endblock %}
