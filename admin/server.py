@@ -6,13 +6,12 @@ from web.contrib.template import render_jinja
 from sqlalchemy.orm import scoped_session, sessionmaker
 from models import *
 from shutil import copyfile
+import config
 
 render = render_jinja(
         'templates/admin',   # Set template directory.
         encoding = 'utf-8',                         # Encoding.
     )
-OUTPUT_DIR = os.path.dirname(os.path.realpath("../static")) #by default we're going to go up one directory and save to the static folder
-
 
 urls = ("/","index",
     "/home","home",
@@ -41,11 +40,7 @@ def load_sqla(handler):
 app = web.application(urls, globals())
 app.add_processor(load_sqla)
 
-def create_password(in_pass):
-    hashout = hashlib.md5(in_pass).hexdigest()
-    for i in range(1,50):
-        hashout = hashlib.md5(hashout).hexdigest()
-    return hashout
+
 
 def is_loggedin():
     c = web.cookies().get("mrsc_id")
@@ -53,6 +48,12 @@ def is_loggedin():
         return False
     else:
         return True
+def authorized(func):
+    def execute(*args ):
+        if is_loggedin() != True:
+            return web.seeother("/")
+        return func(*args )
+    return execute
 
 def login_attempt(username, password):
     q = web.ctx.orm.query(User).filter(User.name == username).filter(User.password == password)
@@ -68,14 +69,6 @@ class index:
 	def GET (self):
 		if is_loggedin():
 			return web.seeother("/home")
-		u_Lookup = web.ctx.orm.query(User).filter(User.name == "test@example.com").first()
-		if u_Lookup == None:
-			u = User(name="test@example.com"
-		            ,first_name="Test"
-		            ,last_name ="User"
-		            ,password =create_password("pass"))
-			web.ctx.orm.add(u)
-			web.ctx.orm.commit()
 		return render.index(errormessage="")
 
 
@@ -97,18 +90,14 @@ class login:
             return web.seeother("/home")
 
 class home:
+    @authorized
     def GET(self):
-    	print "home"
-        if is_loggedin():
-        	posts = web.ctx.orm.query(Post).order_by(Post.date_posted.desc())
-        	return render.home(posts = posts,building=os.path.isfile("build.db3"))
-        else:
-        	print "fail"
-        	return web.seeother("/")
+        posts = web.ctx.orm.query(Post).order_by(Post.date_posted.desc())
+        return render.home(posts = posts,building=os.path.isfile(os.path.join(config.BASE_DIR,"build.lock")))
+        
 class edit:
-	def GET(self):
-		if is_loggedin() != True:
-			return web.seeother("/")
+    @authorized
+    def GET(self):
 		post_id = web.input().post_id
 		if post_id == None:
 			post_id = 0
@@ -117,9 +106,8 @@ class edit:
 			post = Post()
 			post.id = 0		
 		return render.edit(post = post)
-	def POST(self):
-		if is_loggedin() != True:
-			return web.seeother("/")
+    @authorized
+    def POST(self):
 		post_id = web.input().post_id
 		if post_id == None:
 			post_id = 0
@@ -141,13 +129,17 @@ class edit:
 			web.ctx.orm.add(p)
 		web.ctx.orm.commit()
 		web.redirect("/home")
+
 class build:
-	def GET(self):
-		if is_loggedin() != True:
-			return web.seeother("/")
-		copyfile("data.db3","build.db3")
-		subprocess.call(["python","build_site.py"])
-		return web.seeother("/home")
+    @authorized
+    def GET(self):
+        copyfile(os.path.join(config.BASE_DIR,"data.db3"),os.path.join(config.BASE_DIR,"build.db3"))
+        lock_file = file(os.path.join(config.BASE_DIR,'build.lock'),'w')
+        lock_file.write('building')
+        lock_file.close()
+        subprocess.call(["python","build_site.py"])
+        return web.seeother("/home")
+
 
 if __name__ == "__main__":
-	app.run()
+    app.run()

@@ -1,12 +1,15 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, DateTime, Text
+import os
 import datetime
+import config
 
-engine = create_engine('sqlite:///data.db3', echo=True)
+engine = create_engine('sqlite:///'+os.path.join(config.BASE_DIR,'data.db3'),echo=True)
 
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -45,6 +48,25 @@ post_table = Post.__table__
 
 metadata = Base.metadata
 
-
 if __name__ == "__main__":
+    from sqlalchemy.orm import scoped_session, sessionmaker
+    import hashlib
+    def create_password(in_pass):
+        hashout = hashlib.md5(in_pass).hexdigest()
+        for i in range(1,50):
+            hashout = hashlib.md5(hashout).hexdigest()
+        return hashout
     metadata.create_all(engine)
+    db = scoped_session(sessionmaker(bind=engine))
+    u = User(name="test@example.com"
+        ,first_name="Test"
+        ,last_name ="User"
+        ,password =create_password("pass"))
+    db.add(u)
+    p = Post()
+    p.title="First Post"
+    p.url="first_post"
+    p.summary="This is my First Post in my new blog."
+    p.body="<p>Here is the first post in my new blog. You can delete this post and create a new one.</p>"
+    db.add(p)
+    db.commit()
