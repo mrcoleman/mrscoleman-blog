@@ -137,7 +137,7 @@ class build:
         lock_file = file(os.path.join(config.BASE_DIR,'build.lock'),'w')
         lock_file.write('building')
         lock_file.close()
-        subprocess.call(["python","build_site.py"])
+        subprocess.Popen(["python","build_site.py"])
         return web.seeother("/home")
 
 
