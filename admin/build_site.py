@@ -4,6 +4,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from models import *
 from jinja2 import Environment, PackageLoader
 from os.path import expanduser
+import ftplib
 import config
 
 
@@ -12,6 +13,13 @@ OUTPUT_DIR = os.path.join(config.BASE_DIR,TIME_OUT)
 DB_FILE = os.path.join(config.BASE_DIR,'build.'+TIME_OUT+'.db3')
 TMP_DB_FILE = os.path.join(config.BASE_DIR,'build.db3')
 LOCK_FILE = os.path.join(config.BASE_DIR,'build.lock')
+
+def makeDirAndSaveIndex(path_out,textOut):
+	if os.path.isdir(path_out) != True:
+		os.makedirs(path_out)
+	file_out = file(os.path.join(path_out,"index.html"),'w')
+	file_out.write(textOut)
+	file_out.close()
 
 def render_all_posts():
 	current_offset = 0
@@ -25,29 +33,57 @@ def render_all_posts():
 def render_post(post):
 	html_out = single.render(post=post)
 	full_path = os.path.join(OUTPUT_DIR,post.date_posted.strftime('%Y/%m/%d'),post.url)
-	if os.path.isdir(full_path) != True:
-		os.makedirs(full_path)
-	file_out = file(os.path.join(full_path,"index.html"),'w')
-	file_out.write(html_out)
-	file_out.close()
+	makeDirAndSaveIndex(full_path,html_out)
 
 def render_index(posts):
 	html_out = index.render(posts=posts)
-	file_out = file(os.path.join(OUTPUT_DIR,'index.html'),'w')
-	file_out.write(html_out)
-	file_out.close()
+	makeDirAndSaveIndex(OUTPUT_DIR,html_out)
+
+def render_archives():
+	
+	pages = post_count /10
+	if (post_count % 10) > 0:
+		pages = pages + 1
+	for page in range(pages):
+		has_next = True
+		if page == (pages -1):
+			has_next = False
+		render_archivePage(page, has_next)
+
+def render_archivePage( pageNumber, has_next):
+	posts = db.query(Post).order_by(Post.date_posted.desc()).limit(10).offset(pageNumber*10)
+	html_out = archivePage.render(posts=posts,pageNumber = (pageNumber+1),has_next = has_next)
+	page_path = os.path.join(OUTPUT_DIR,str.format("archives/{0}",(pageNumber+1)))
+	makeDirAndSaveIndex(page_path,html_out)
+
+def uploadStaticFiles():
+	ftp = ftplib.FTP()
+	ftp.connect(config.FTP_HOST,config.FTP_PORT)
+	ftp.login(config.FTP_USER)
+	ftp.cwd(config.FTP_STATIC_ROOT)
+	doUploadDir(ftp,OUTPUT_DIR)
+	ftp.close()
+
+def doUploadDir(ftp, currentDir):
+	pass
+
 env = Environment(loader=PackageLoader('build_site', os.path.join(config.BASE_DIR,'templates/site')))
 index = env.get_template('index.html')
 single = env.get_template('single.html')
+archivePage = env.get_template('archivePage.html')
 
 if os.path.exists(LOCK_FILE) and os.path.exists(TMP_DB_FILE):
+	print "doing it"
 	if os.path.exists(OUTPUT_DIR) == False:
 		os.mkdir(OUTPUT_DIR)
 	os.rename(TMP_DB_FILE,DB_FILE)
 	engine = create_engine('sqlite:///'+ DB_FILE)
 	db = scoped_session(sessionmaker(bind=engine))
 	posts = db.query(Post).order_by(Post.date_posted.desc()).limit(10)
+	post_count = db.query(Post).count()
 	render_index(posts)
 	render_all_posts()
+	render_archives()
 	db.commit()
+	#uploadStaticFiles()
 	os.remove(LOCK_FILE)

@@ -40,7 +40,11 @@ def load_sqla(handler):
 app = web.application(urls, globals())
 app.add_processor(load_sqla)
 
-
+def create_password(in_pass):
+        hashout = hashlib.md5(in_pass).hexdigest()
+        for i in range(1,50):
+            hashout = hashlib.md5(hashout).hexdigest()
+        return hashout
 
 def is_loggedin():
     c = web.cookies().get("mrsc_id")

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block body %}.
 <div class="hero-unit">
-  <h1>Mrs. Coleman's Blog</h1>
+  <h1>Mrs. Coleman's Blog Archives</h1>
 </div>
 <div class="container">
   {% for post in posts %}
@@ -10,5 +10,13 @@
       {{post.summary}}
     </div>
   {% endfor %}
-</div>
+ </div>
+ <div class="container">
+ 	{% if pageNumber > 1 %}
+ 		<a href="/archives/{{ pageNumber - 1 }}" class="btn btn-large">Previous</a>
+ 	{% endif %}
+ 	{% if has_next %}
+ 		<a href="/archives/{{ pageNumber + 1 }}" class="btn btn-large">Next</a>
+ 	{% endif %}
+ </div>
 {% endblock %}

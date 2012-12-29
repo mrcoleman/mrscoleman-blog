@@ -6,3 +6,9 @@ from os.path import expanduser
 #on windows this should be C:\Users\<Your Username>\mrscoleman-blog
 BASE_DIR = os.path.join(expanduser("~"),".mrscoleman-blog")
 
+#ftp info
+FTP_HOST = ""
+FTP_PORT = 21
+FTP_USER = ""
+FTP_PASSWORD = ""
+FTP_STATIC_ROOT = ""
