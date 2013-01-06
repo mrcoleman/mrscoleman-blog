@@ -17,7 +17,8 @@ urls = ("/","index",
     "/home","home",
     "/login","login",
     "/build","build",
-    "/edit","edit")
+    "/edit","edit",
+    "/settings","settings")
 
 
 
@@ -39,6 +40,32 @@ def load_sqla(handler):
 
 app = web.application(urls, globals())
 app.add_processor(load_sqla)
+
+class BuildSettings():
+    pass
+def GetSettingByKey(key):
+    setting = web.ctx.orm.query(Setting).filter(Setting.key == key).first()
+    return setting
+
+def SetSettingByKey(key, value):
+    setting = GetSettingByKey(key)
+    isNew = False
+    print setting
+    if(setting == None):
+        setting = Setting()
+        setting.key = key
+        isNew = True
+    setting.value = value
+    if(isNew):
+        web.ctx.orm.add(setting)
+    web.ctx.orm.commit()
+
+def get_settings():
+    setting_items = web.ctx.orm.query(Setting).all()
+    settings = BuildSettings()
+    for setting_item in setting_items:
+        setattr(settings,setting_item.key,setting_item.value)
+    return settings
 
 def create_password(in_pass):
         hashout = hashlib.md5(in_pass).hexdigest()
@@ -86,18 +113,17 @@ class login:
         form = web.input()
         u = login_attempt(form.username,create_password(form.password))
         if u == None:
-        	print "failed login"
         	return render.index(errormessage="Invalid Login")
         else:
             set_login(u)
-            print "logged in"
             return web.seeother("/home")
 
 class home:
     @authorized
     def GET(self):
         posts = web.ctx.orm.query(Post).order_by(Post.date_posted.desc())
-        return render.home(posts = posts,building=os.path.isfile(os.path.join(config.BASE_DIR,"build.lock")))
+        settings = get_settings()
+        return render.home(posts = posts,building=os.path.isfile(os.path.join(config.BASE_DIR,"build.lock")), settings=settings)
         
 class edit:
     @authorized
@@ -123,16 +149,25 @@ class edit:
 			p.body = ""
 			p.summary = ""
 		form = web.input()
-		print form.title
 		p.title = form.title
 		p.url = form.url
 		p.body = form.body_text
 		p.summary = form.summary
-		print p.id
 		if p.id == None:
 			web.ctx.orm.add(p)
 		web.ctx.orm.commit()
 		web.redirect("/home")
+
+class settings:
+    @authorized
+    def POST(self):
+        form = web.input()
+        print "saving settings"
+        print form.Google_Analytics_Id
+        print form.Domain
+        SetSettingByKey("Google_Analytics_Id",form.Google_Analytics_Id)
+        SetSettingByKey("Domain",form.Domain)
+        web.seeother("/home")
 
 class build:
     @authorized

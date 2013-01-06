@@ -14,6 +14,31 @@ DB_FILE = os.path.join(config.BASE_DIR,'build.'+TIME_OUT+'.db3')
 TMP_DB_FILE = os.path.join(config.BASE_DIR,'build.db3')
 LOCK_FILE = os.path.join(config.BASE_DIR,'build.lock')
 
+class BuildSettings():
+	pass
+def GetSettingByKey(key):
+    setting = db.query(Setting).filter(Setting.key == key).first()
+    return setting
+
+def SetSettingByKey(key, value):
+    setting = GetSettingByKey(key)
+    isNew = False
+    print setting
+    if(setting == None):
+        setting = Setting()
+        setting.key = key
+        isNew = True
+    setting.value = value
+    if(isNew):
+        db.add(setting)
+    db.commit()
+def get_settings():
+    setting_items = db.query(Setting).all()
+    settings = BuildSettings()
+    for setting_item in setting_items:
+        setattr(settings,setting_item.key,setting_item.value)
+    return settings
+
 def makeDirAndSaveIndex(path_out,textOut):
 	if os.path.isdir(path_out) != True:
 		os.makedirs(path_out)
@@ -31,12 +56,12 @@ def render_all_posts():
 		posts = db.query(Post).order_by(Post.date_posted.desc()).limit(10).offset(current_offset)
 
 def render_post(post):
-	html_out = single.render(post=post)
+	html_out = single.render(post=post,settings = settings)
 	full_path = os.path.join(OUTPUT_DIR,post.date_posted.strftime('%Y/%m/%d'),post.url)
 	makeDirAndSaveIndex(full_path,html_out)
 
 def render_index(posts):
-	html_out = index.render(posts=posts)
+	html_out = index.render(posts=posts, settings = settings)
 	makeDirAndSaveIndex(OUTPUT_DIR,html_out)
 
 def render_archives():
@@ -52,7 +77,7 @@ def render_archives():
 
 def render_archivePage( pageNumber, has_next):
 	posts = db.query(Post).order_by(Post.date_posted.desc()).limit(10).offset(pageNumber*10)
-	html_out = archivePage.render(posts=posts,pageNumber = (pageNumber+1),has_next = has_next)
+	html_out = archivePage.render(posts=posts,pageNumber = (pageNumber+1),has_next = has_next, settings = settings)
 	page_path = os.path.join(OUTPUT_DIR,str.format("archives/{0}",(pageNumber+1)))
 	makeDirAndSaveIndex(page_path,html_out)
 
@@ -71,6 +96,8 @@ env = Environment(loader=PackageLoader('build_site', os.path.join(config.BASE_DI
 index = env.get_template('index.html')
 single = env.get_template('single.html')
 archivePage = env.get_template('archivePage.html')
+settings = BuildSettings()
+
 
 if os.path.exists(LOCK_FILE) and os.path.exists(TMP_DB_FILE):
 	print "doing it"
@@ -79,6 +106,7 @@ if os.path.exists(LOCK_FILE) and os.path.exists(TMP_DB_FILE):
 	os.rename(TMP_DB_FILE,DB_FILE)
 	engine = create_engine('sqlite:///'+ DB_FILE)
 	db = scoped_session(sessionmaker(bind=engine))
+	settings=get_settings()
 	posts = db.query(Post).order_by(Post.date_posted.desc()).limit(10)
 	post_count = db.query(Post).count()
 	render_index(posts)

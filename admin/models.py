@@ -43,6 +43,19 @@ class Post(Base):
 		self.body=""
 		self.summary=""
 
+class Setting(Base):
+    __tablename__ = 'settings'
+    key = Column(String, primary_key=True)
+    value = Column(String)
+
+    def __init__(self):
+        self.key = ""
+        value = ""
+
+
+
+
+
 users_table = User.__table__
 post_table = Post.__table__
 
@@ -70,3 +83,4 @@ if __name__ == "__main__":
     p.body="<p>Here is the first post in my new blog. You can delete this post and create a new one.</p>"
     db.add(p)
     db.commit()
+

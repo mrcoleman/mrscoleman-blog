@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block body %}
-<h2>Posts</h2>
+<ul id="nav-tabs" class="nav nav-tabs">
+	<li class="active"><a href="#tab_posts" data-toggle="tab">Posts</a></li>
+	<li><a href="#tab_settings" data-toggle="tab">Settings</a></li>
+</ul>
+<div class="tab-content">
+<div id="tab_posts" class="tab-pane active">
 <div class="row">
 	<div class="span6">
 <a href="/edit?post_id=0" class="btn btn-large">New</a>
@@ -28,4 +33,18 @@
 </tr>
 {% endfor %}
 </table>
+</div>
+<div id="tab_settings" class="tab-pane">
+	<form class="form" action="/settings" method="POST">
+		<label for="Domain">Domain Name</label>
+		<input name="Domain" type="text" value="{{ settings.Domain }}" />
+		<label for="Google_Analytics_Id">Google Analytics Id</label>
+		<input name="Google_Analytics_Id" type="text" value="{{ settings.Google_Analytics_Id }}"/>
+
+		<br/>
+		<button type="Submit" class="btn btn-large">Save Settings</button>
+	</form>
+</div>
+</div>
+
 {% endblock %}

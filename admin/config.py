@@ -8,7 +8,9 @@ BASE_DIR = os.path.join(expanduser("~"),".mrscoleman-blog")
 
 #ftp info
 FTP_HOST = ""
-FTP_PORT = 21
+FTP_PORT = ""
 FTP_USER = ""
 FTP_PASSWORD = ""
 FTP_STATIC_ROOT = ""
+
+GOOGLE_ANALYTICS_ID = ""
